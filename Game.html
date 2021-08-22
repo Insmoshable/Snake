@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script></script>
+        <style>
+            .snake{
+                position: absolute;
+                background-color: darkgreen;
+                border-radius: 5px;
+                height: 20px;
+                width: 20px;
+                margin: 1px;
+            }
+            .apple{
+                position: absolute;
+                background-color: indianred;
+                border-radius: 100%;
+                height: 20px;
+                width: 20px;
+                margin: 1px;
+            }
+            .container{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                display: flex;
+                flex-direction: column;
+                align-content: center;
+            }
+            .button, .score{
+                text-align: center;
+                font-family: arial;
+                font-weight: bold;
+                color: dimgrey;
+                padding: 10px 35px;
+            }
+            .score{
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 5px;
+            }
+            .button {
+                border: 1px solid dimgrey;
+                border-radius: 5px;
+                text-decoration: none;
+                background-color: rgba(255, 255, 255, 0.7);
+            }
+            .button:hover {
+                background-color: rgba(230, 230, 230, 0.8);
+                color: black;
+                border-color: black;
+                cursor: pointer; 
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+            var maxX;var maxY;var freeSpaces; var turns = 0; //find and make maximums for the grid
+            var grid = 22;var snakeLength = 8; var snake = new snake(); var apple = new Apple(0,0);
+            function snake(){
+                this.head = null;
+                this.pieces = [];
+                this.direction = 2;
+                this.lastMove = 2;
+                this.checkOverlap = function(){
+                    if (this.head.x<0||this.head.y<0||this.head.y>maxY-1||this.head.x>maxX-1){
+                        console.log("HEAD OUT OF BOUNDARIES")
+                        return true;
+                    }
+                    for (var i=1;i<this.pieces.length;i++){
+                        if (this.pieces[i].x==this.head.x&&this.pieces[i].y==this.head.y){
+                            console.log("HEAD COLLIDING WITH SNAKE AT ("+this.head.x+","+this.head.y+")")
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                this.checkApple = function(){
+                    if (apple.x==this.head.x&&apple.y==this.head.y){
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            function Apple(x,y){
+                this.x = x;
+                this.y = y;
+            }
+            function addPiece(p){
+                var add = $('<div></div>').addClass("snake").css({left: p.x*grid, top: p.y*grid});
+                add.appendTo('body');
+                freeSpaces --;
+            }
+            function dataPoint(x,y, curve){
+                this.x = x;
+                this.y = y;
+                this.curve = curve;
+            }
+            function makeBoard(){
+                var w = window.innerWidth;
+                var h= window.innerHeight;
+                maxX= (w-(w%grid))/grid;
+                maxY = (h-(h%grid))/grid;
+                freeSpaces = (maxX)*(maxY);
+                var j=0;
+                for (var i=0;i<snakeLength;i++){
+                    if (i%maxY==0&&i!=0){
+                        j++;
+                    }
+                    if (j%2==0||j==0){
+                        snake.pieces.unshift(new dataPoint(j,i%maxY,0));
+                    }else{
+                        snake.pieces.unshift(new dataPoint(j,maxY-1-(i%maxY),0));
+                    }
+                    
+                }
+                for (var i=0;i<snakeLength;i++){
+                    addPiece(snake.pieces[i]);
+                }
+                snake.head = new dataPoint(snake.pieces[0].x,snake.pieces[0].y,0);
+                makeApple();
+            }
+            function makeApple(){
+                var p=appleTarget();
+                console.log ("APPLE PLACED AT: ("+p.x+","+p.y+")");
+                apple.x = p.x;
+                apple.y = p.y;
+                var add = $('<div></div>').addClass("apple").css({left: p.x*grid, top: p.y*grid});
+                add.appendTo('body');
+            }
+            function appleTarget(){
+                var target = Math.floor(Math.random()*freeSpaces);
+                var i = 0;
+                console.log(target);
+                for (var x=0;x<maxX;x++){
+                    for (var y=0;y<maxY;y++){
+                        for (var s=0;s<snake.pieces.length;s++){
+                            if (snake.pieces[s].x==x&&snake.pieces[s].y==y){;
+                                console.log ("SNAKE DETECTED AT: ("+x+","+y+")");
+                                break;
+                            }else{
+                                if ((s+1)==snake.pieces.length){
+                                    if (i==target){
+                                        return (new dataPoint(x,y,0));
+                                    }
+                                    i++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            function turn (){
+                moveSnake();
+                if (snake.checkOverlap()){
+                //if (false){
+                    clearInterval(timeoutID);
+                    endGame();
+                    return;
+                }
+                turns ++;
+                render();
+            }
+            function render(){
+                var bl = "5px";
+                var br = "5px";
+                var tr = "5px";
+                var tl = "5px";
+                switch(snake.pieces[1].curve) {
+                    case 0: //straight
+                        break;
+                    case 1:
+                        tr = "100%";
+                        break;
+                    case 2:
+                        tl = "100%";
+                        break;
+                    case 3:
+                        bl = "100%";
+                        break;
+                    case 4:
+                        br = "100%";
+                        break;
+                }
+                var p = snake.pieces[1];
+                $("body .snake:nth-of-type("+(2)+")").css({left: snake.pieces[1].x*grid, top: snake.pieces[1].y*grid, 'border-bottom-left-radius': bl, 'border-bottom-right-radius': br, 'border-top-right-radius': tr, 'border-top-left-radius': tl});
+                var bl = "5px";
+                var br = "5px";
+                var tr = "5px";
+                var tl = "5px";
+                var p = snake.pieces[0];
+                $("body .snake:nth-of-type("+(1)+")").css({left: snake.pieces[0].x*grid, top: snake.pieces[0].y*grid, 'border-bottom-left-radius': bl, 'border-bottom-right-radius': br, 'border-top-right-radius': tr, 'border-top-left-radius': tl});
+                var p = snake.pieces[snake.pieces.length-1];
+                $("body .snake:last()").css({left: snake.pieces[snake.pieces.length-1].x*grid, top: snake.pieces[snake.pieces.length-1].y*grid, 'border-bottom-left-radius': bl, 'border-bottom-right-radius': br, 'border-top-right-radius': tr, 'border-top-left-radius': tl});
+            }
+            function moveSnake(){
+                switch(snake.direction) {
+                    case 0: //left
+                        snake.head.x --;
+                        if (snake.lastMove==1){//up
+                            snake.pieces[0].curve=1;
+                        }else{
+                        if (snake.lastMove==3){//down
+                            snake.pieces[0].curve=4;
+                        }else{
+                            snake.pieces[0].curve=0;
+                        }}
+                        break;
+                    case 1: //up
+                        snake.head.y --;
+                        if (snake.lastMove==0){//left
+                            snake.pieces[0].curve=3;
+                        }else{
+                        if (snake.lastMove==2){//right
+                            snake.pieces[0].curve=4;
+                        }else{
+                            snake.pieces[0].curve=0;
+                        }}
+                        break;
+                    case 2: //right
+                        snake.head.x ++;
+                        if (snake.lastMove==1){//up
+                            snake.pieces[0].curve=2;
+                        }else{
+                        if (snake.lastMove==3){//down
+                            snake.pieces[0].curve=3;
+                        }else{
+                            snake.pieces[0].curve=0;
+                        }}
+                        break;
+                    case 3: //down
+                        snake.head.y ++;
+                        if (snake.lastMove==0){//left
+                            snake.pieces[0].curve=2;
+                        }else{
+                        if (snake.lastMove==2){//right
+                            snake.pieces[0].curve=1;
+                        }else{
+                            snake.pieces[0].curve=0;
+                        }}
+                        break;
+                }
+                snake.lastMove = snake.direction;
+                snake.pieces.unshift(new dataPoint(snake.head.x,snake.head.y,0));
+                $('body .snake:last()').prependTo('body');
+                if (snake.checkApple()){
+                    $(".apple").remove();
+                    makeApple();
+                    addPiece(new dataPoint(snake.pieces[snake.pieces.length-1].x,snake.pieces[snake.pieces.length-1].y,snake.pieces[snake.pieces.length-1].curve));
+                }else{
+                    snake.pieces.pop();
+                }
+            }
+            function endGame(){
+                var addA = $('<div></div>').addClass("container");
+                addA.appendTo('body');
+                var addB = $('<a>New Game</a>').addClass("button").click(function() {
+                    $('.button').remove();
+                    $('div').remove();
+                    snake.head = null;
+                    snake.pieces = [];
+                    snake.direction = 2;
+                    snake.lastMove = 2;
+                    turns = 0;
+                    makeBoard();
+                    timeoutID = window.setInterval(turn, 100);
+                });
+                addB.appendTo('.container');
+                var addC = $('<div>Score: '+(snake.pieces.length*25)+'</div>').addClass("score");
+                addC.appendTo('.container');
+                var addD = $('<div>Time: '+(turns/10)+' Secs</div>').addClass("score");
+                addD.appendTo('.container');
+            }
+            $( document).ready(function() {
+                makeBoard();
+                timeoutID = window.setInterval(turn, 100);
+            })
+            $(document).keydown(function(e) {
+                switch(e.which) {
+                    case 81:
+                        clearInterval(timeoutID);
+                    break;
+                    case 69:
+                        timeoutID = window.setInterval(turn, 100);
+                    break;
+                    case 37: //left
+                        if (snake.lastMove !=2){
+                            snake.direction = 0;}
+                    break;
+                    case 38: //up
+                        if (snake.lastMove !=3){
+                            snake.direction = 1;}
+                    break;
+                    case 39: //right5
+                        if (snake.lastMove !=0){
+                            snake.direction = 2;}
+                    break;
+                    case 40: //down
+                        if (snake.lastMove !=1){
+                            snake.direction = 3;}
+                    break;
+                    default: return; // exit this handler for other keys
+                }
+                e.preventDefault(); // prevent the default action (scroll / move caret)
+            });
+        </script>
+    </body>
+</html>
